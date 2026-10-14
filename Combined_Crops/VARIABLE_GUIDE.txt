@@ -1,0 +1,212 @@
+================================================================================
+VARIABLE GUIDE — Combined UNPS Crop Dataset (Maize, Beans & Coffee)
+UNPS 2018/19 (Wave 7)
+================================================================================
+
+How every column in "Crop_Analysis" (and "Household_Credit") was built, and how to
+trace it back to the original UNPS survey variables.
+
+All observations are at the PLOT x CROP x SEASON level.
+
+--------------------------------------------------------------------------------
+household_id
+    What:      Anonymised household identifier (32 characters).
+    Source:    UNPS `hhid` (same column in every file).
+    Coded:     Copied directly.
+    Limits:    Anonymised; links crop, credit and location records.
+
+parcel_id / plot_id
+    What:      Parcel and plot identifiers (within the household).
+    Source:    `parcelID`, `pltid` (AGSEC4A/4B, AGSEC5A/5B, AGSEC3A/3B).
+    Coded:     Copied directly.
+    Limits:    Not unique across households; combine with household_id + season.
+
+season
+    What:      The agricultural season the row refers to.
+    Source:    Derived from which UNPS files were used:
+               A-files (AGSEC4A/5A/3A) = "Season 2 2017"
+               B-files (AGSEC4B/5B/3B) = "Season 1 2018"
+    Coded:     Text label.
+    Limits:    Always keep seasons separate when modelling.
+
+crop_code
+    What:      Original UNPS crop code.
+    Source:    `cropID` (AGSEC4A/4B, AGSEC5A/5B).
+    Coded:     130 = Maize
+               210 = Beans
+               810 = Coffee (generic)
+               811 = Coffee (arabica)
+               812 = Coffee (robusta)
+    Limits:    810/811/812 all mean coffee; group under crop_name = "Coffee".
+
+crop_name
+    What:      Standardised crop label.
+    Source:    Derived from crop_code.
+    Coded:     "Maize", "Beans", or "Coffee".
+    Limits:    Use this to filter each crop, or to compare maize vs beans.
+
+region
+    What:      Region name.
+    Source:    `region` in HH/GSEC1.csv
+    Coded:     1 = Central, 2 = Eastern, 3 = Northern, 4 = Western.
+    Limits:    4-region code, stable across survey waves.
+
+district
+    What:      District name.
+    Source:    `distirct_name` in HH/GSEC1.csv  (header has the spelling typo).
+    Coded:     Copied directly.
+    Limits:    District boundaries changed over time; prefer region for
+               cross-wave comparisons.
+
+rural_urban
+    What:      Rural / urban location.
+    Source:    `urban` in HH/GSEC1.csv
+    Coded:     0 = Rural, 1 = Urban.
+    Limits:    AGSEC1.csv uses a DIFFERENT coding (1=Urban, 2=Rural). This
+               dataset always uses the GSEC1 0/1 coding.
+
+crop_production_kg
+    What:      Total crop harvested, in kilograms.
+    Source:    AGSEC5A: s5aq06a_1 x a5aq6d;  AGSEC5B: s5bq06a_1 x a5bq6d.
+    Coded:     quantity (local units) x conversion factor (kg per unit).
+    Higher =   More harvested.
+    Limits:    Blank if quantity or conversion factor is missing/invalid.
+               For coffee the kg refers to the harvested form (cherries /
+               dried cherries / green) - NOT standardised to green coffee.
+
+crop_area_acres
+    What:      Crop area planted, farmer-reported, in acres.
+    Source:    `s4aq07` (AGSEC4A) / `s4bq07` (AGSEC4B).
+    Coded:     Copied directly (acres).
+    Limits:    Farmer-reported; intercropped (mixed-stand) plots less precise.
+
+crop_area_ha
+    What:      Crop area in hectares.
+    Coded:     crop_area_acres x 0.404686.
+    Limits:    1 acre = 0.404686 hectares.
+
+crop_yield_kg_ha
+    What:      Crop yield (kg per hectare).
+    Coded:     crop_production_kg / crop_area_ha  (maize & beans only).
+    Higher =   Higher productivity.
+    Limits:    Only computed where area > 0 and production valid.
+               COFFEE: left blank on purpose - the harvested product form is
+               mixed (fresh/dried cherries vs green coffee) and the area vs
+               production crop codes are inconsistent, so a comparable
+               kg/ha cannot be calculated. Do NOT compare to grain yield.
+
+seed_type
+    What:      Seed type label.
+    Source:    `s4aq13` (AGSEC4A) / `s4bq13` (AGSEC4B).
+    Coded:     1 = Traditional, 2 = Improved.
+    Limits:    Farmer self-reported. Mostly missing for coffee (perennial).
+
+improved_seed
+    What:      Improved-seed indicator.
+    Coded:     1 = improved, 0 = traditional, blank = not recorded.
+    Limits:    Blank means "unknown", NOT "traditional".
+               Not meaningful for coffee (coffee varieties are not
+               "improved seed").
+
+organic_fertilizer_used
+    What:      Organic fertilizer (manure/compost) used on the plot.
+    Source:    `s3aq04` (AGSEC3A) / `s3bq04` (AGSEC3B).
+    Coded:     1 = Yes, 0 = No, blank = not matched/asked.
+    Limits:    PLOT-level: applies to the whole plot, not one crop.
+
+inorganic_fertilizer_used
+    What:      Inorganic/chemical fertilizer used on the plot.
+    Source:    `s3aq13` (AGSEC3A) / `s3bq13` (AGSEC3B).
+    Coded:     1 = Yes, 0 = No, blank = not matched/asked.
+    Limits:    PLOT-level; shared by every crop on the plot.
+
+inorganic_fertilizer_kg
+    What:      Inorganic fertilizer quantity, in kg.
+    Source:    `s3aq15` (AGSEC3A) / `s3bq15` (AGSEC3B).
+    Coded:     Copied directly (already in kg).
+    Limits:    PLOT-level, not crop-specific; only meaningful when used.
+
+household_borrowed
+    What:      Household has at least one member who borrowed money in the
+               last 12 months.
+    Source:    `CB12` in HH/GSEC7_4.csv (person level).
+    Coded:     1 = any member CB12==1; 0 = members answered but none
+               borrowed; blank = no member was asked.
+    Limits:    "Last 12 months" is a broad window; no loan date recorded.
+
+agricultural_loan
+    What:      Household has a loan with an agricultural purpose.
+    Source:    `CB17` in HH/GSEC7_4.csv.
+    Coded:     1 = any member CB17 in {2,3,4} (2=buy livestock, 3=buy farm
+               tools, 4=buy farm inputs); 0 otherwise; blank = unknown.
+    Limits:    Only identifies an agricultural purpose - NOT that the loan
+               financed a specific crop.
+
+loan_purpose
+    What:      Readable agricultural loan purpose(s).
+    Source:    `CB17` in HH/GSEC7_4.csv.
+    Coded:     Text label(s), e.g. "Buy farm inputs".
+    Limits:    Blank if no agricultural loan. (In Household_Credit this
+               column holds ALL loan purposes.)
+
+rainfall_mm
+    What:      Growing-season rainfall (to be added).
+    Source:    NOT in UNPS - will come from CHIRPS (external).
+    Coded:     Intentionally left blank - do not invent values.
+    Limits:    Will be matched by coordinates + season later.
+
+yield_flag
+    What:      Data-quality flag for review.
+    Coded:     Text. Examples:
+                 "area<=0"
+                 "suspiciously high yield (>10,000 kg/ha)"
+                 "reported no harvest but quantity recorded"
+                 "coffee: yield not computed (...)"   (all coffee rows)
+                 "coffee: duplicate area across crop codes (...)"
+    Limits:    A flag only - no rows are removed by this dataset.
+
+================================================================================
+Household_Credit sheet (extra columns)
+================================================================================
+
+Same household_borrowed / agricultural_loan definitions as above, but ONE ROW
+PER HOUSEHOLD (aggregated from the person level).
+
+loan_purpose
+    What:      All loan purpose label(s) reported by household members.
+    Source:    `CB17` in HH/GSEC7_4.csv.
+    Coded:     Text label(s), e.g. "Consumption goods; Education".
+    Limits:    This sheet shows ALL purposes; Crop_Analysis shows only the
+               agricultural purposes.
+
+borrowing_source
+    What:      Whether the household's loans came from formal or informal
+               sources.
+    Source:    `CB16__1` ... `CB16__14`, `CB16__96`, `CB16__97` in GSEC7_4.
+    Coded:     "Formal" (bank, credit institution, MDI, SACCO, MFI),
+               "Informal" (ROSCA, VSLA, ASCA, money lender, mobile money, ...),
+               "Formal & informal", or blank.
+    Limits:    Source is only recorded for the current loan; may be blank.
+
+================================================================================
+Crop_Summary sheet (one row per crop)
+================================================================================
+
+All statistics are UNWEIGHTED sample statistics (no survey weights applied).
+
+total_observations       Number of plot x crop x season rows.
+unique_households        Number of distinct farming households.
+valid_yield_observations Rows with a non-missing crop_yield_kg_ha.
+missing_yield_observations  Rows with missing yield (all coffee, plus
+                         maize/beans with no area or no production).
+mean/median_yield_kg_ha  Mean/median of crop_yield_kg_ha (maize & beans).
+improved_seed_adoption_rate  improved / (improved + traditional), among rows
+                         with a recorded seed type. For coffee this rests on
+                         a very small sample (63 rows) - treat with care.
+organic/inorganic_fertilizer_use_rate  users / rows with a recorded answer
+                         (plot-level, so shared across crops on a plot).
+household_borrowing_rate  Borrowing households / households with a recorded
+                         answer - computed on UNIQUE households.
+agricultural_borrowing_rate  Agricultural-loan households / households with a
+                         recorded answer - computed on UNIQUE households.
+================================================================================
